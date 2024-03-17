@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Случайное изображение</title>
+    <style>
+      #app {
+        font-family: sans-serif;
+        margin: 20px;
+      }
+      #image {
+        width: 400px;
+        height: 400px;
+        object-fit: cover;
+      }
+      #controls {
+        margin-top: 10px;
+      }
+      #like-button {
+        font-size: 24px;
+        padding: 10px;
+        border: none;
+        cursor: pointer;
+      }
+      #history {
+        margin-top: 20px;
+        display: flex;
+        flex-wrap: wrap;
+      }
+      #history img {
+        width: 100px;
+        height: 100px;
+        margin: 5px;
+        object-fit: cover;
+      }
+    </style>
+</head>
+<body>
+
+  <div id="app">
+    <div id="image-container">
+      <img id="image" src="" alt="Random Unsplash image">
+      <div id="like-container">
+        <button id="like-button">❤</button>
+        <span id="like-count">0</span>
+      </div>
+    </div>
+    <div id="history"></div>
+  </div>
+
+  <script>
+    // Разработка веб-приложения:
+
+    // • Создайте HTML-страницу с элементами: изображение, имя фотографа, кнопка "лайк" и счетчик лайков.
+    // • Используя JavaScript и ваш API-ключ, получите случайное изображение из Unsplash каждый раз, когда пользователь загружает страницу. Обратите внимание, что должно подгружаться всегда случайное изображение, для этого есть отдельная ручка (эндпоинт) у API.
+    // • Отобразите информацию о фотографе под изображением.
+    // • Реализуйте функционал "лайка". Каждый раз, когда пользователь нажимает кнопку "лайк", счетчик должен увеличиваться на единицу. Одну фотографию пользователь может лайкнуть только один раз. Также должна быть возможность снять лайк, если ему разонравилась картинка.
+    // • Добавьте функцию сохранения количества лайков в локальное хранилище, чтобы при новой загрузке страницы счетчик не сбрасывался, если будет показана та же самая картинка.
+    // • Реализуйте возможность просмотра предыдущих фото с сохранением их в истории просмотров в localstorage.
+    // • Реализовать все с помощью async/await, без цепочем then.
+
+
+
+    const unsplashAPI = "https://api.unsplash.com/photos/random/?client_id=YOUR_API_KEY";
+    const localStorageKey = "likedPhotos";
+    const localStorageHistoryKey = "history";
+
+    let likedPhotos = JSON.parse(localStorage.getItem(localStorageKey)) || [];
+    let history = JSON.parse(localStorage.getItem(localStorageHistoryKey)) || [];
+    let currentLikeCount = 0;
+
+    function updateImage() {
+      fetch(unsplashAPI)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("image").src = data.urls.regular;
+          document.getElementById("image").dataset.id = data.id;
+        });
+    }
+
+    function likePhoto() {
+      const imageId = document.getElementById("image").dataset.id;
+      const likeCountElement = document.getElementById("like-count");
+
+      if (!likedPhotos.includes(imageId)) {
+        likedPhotos.push(imageId);
+        localStorage.setItem(localStorageKey, JSON.stringify(likedPhotos));
+        currentLikeCount++;
+        likeCountElement.textContent = currentLikeCount;
+        updateHistory();
+      } else {
+        likedPhotos = likedPhotos.filter(id => id !== imageId);
+        localStorage.setItem(localStorageKey, JSON.stringify(likedPhotos));
+        currentLikeCount--;
+        likeCountElement.textContent = currentLikeCount;
+        updateHistory();
+      }
+    }
+
+    function updateHistory() {
+      const historyElement = document.getElementById("history");
+      historyElement.innerHTML = "";
+
+      history = likedPhotos.map(imageId => {
+        return {
+          id: imageId,
+          url: `https://unsplash.com/photos/${imageId}/download`
+        };
+      });
+
+      localStorage.setItem(localStorageHistoryKey, JSON.stringify(history));
+
+      history.forEach(image => {
+        const imageElement = document.createElement("img");
+        imageElement.src = image.url;
+        historyElement.appendChild(imageElement);
+      });
+    }
+
+    if (localStorage.getItem(localStorageKey)) {
+      currentLikeCount = likedPhotos.length;
+      document.getElementById("like-count").textContent = currentLikeCount;
+    }
+
+    updateImage();
+    updateHistory();
+
+    document.getElementById("like-button").addEventListener("click", likePhoto);
+
+  </script>
+</body>
+</html>
